@@ -1,19 +1,12 @@
-import clientPromise from '../lib/mongodb';
 import { NextRequest } from 'next/server';
+import clientPromise from '../lib/mongodb';
 
-type Props = {
-  params: {
-    alias: string;
-  };
-};
+export const runtime = 'nodejs';
 
-export async function GET(
-  request: NextRequest,
-  props: Props
-) {
+export async function GET(request: NextRequest) {
   try {
-    // Get the alias from the params
-    const { alias } = props.params;
+    // Get the alias from the URL path
+    const alias = request.nextUrl.pathname.substring(1);
     
     const client = await clientPromise;
     const db = client.db('urlshortener');
@@ -25,8 +18,9 @@ export async function GET(
       return new Response('URL not found', { status: 404 });
     }
 
-    // Use Response.redirect() instead of next/navigation redirect
-    return Response.redirect(urlDoc.url);
+    // Use Response.redirect() for the redirect
+    const url = new URL(urlDoc.url);
+    return Response.redirect(url);
   } catch (error) {
     console.error('Error in redirect route:', error);
     return new Response('Internal server error', { status: 500 });
