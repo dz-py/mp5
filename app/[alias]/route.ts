@@ -1,13 +1,19 @@
 import clientPromise from '../lib/mongodb';
 import { NextRequest } from 'next/server';
 
+type Props = {
+  params: {
+    alias: string;
+  };
+};
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { alias: string } }
+  props: Props
 ) {
   try {
-    // Await the params
-    const { alias } = await Promise.resolve(params);
+    // Get the alias from the params
+    const { alias } = props.params;
     
     const client = await clientPromise;
     const db = client.db('urlshortener');
