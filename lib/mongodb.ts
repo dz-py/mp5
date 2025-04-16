@@ -13,15 +13,9 @@ const options = {
   retryWrites: true,
   retryReads: true,
   w: 'majority' as const,
+  // Simplified TLS settings
   ssl: true,
   tls: true,
-  tlsAllowInvalidCertificates: false,
-  tlsAllowInvalidHostnames: false,
-  tlsInsecure: false,
-  // Explicitly set TLS version
-  tlsCAFile: undefined,
-  tlsCertificateKeyFile: undefined,
-  tlsCertificateKeyFilePassword: undefined,
   // Use Node.js native TLS
   useNewUrlParser: true,
   useUnifiedTopology: true
