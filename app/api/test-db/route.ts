@@ -14,11 +14,8 @@ export async function GET() {
     
     console.log('Test DB - MongoDB URI format:', process.env.MONGO_URI.substring(0, 20) + '...');
     
-    // Create a new client with minimal options
-    client = new MongoClient(process.env.MONGO_URI, {
-      connectTimeoutMS: 10000,
-      serverSelectionTimeoutMS: 10000
-    });
+    // Create a new client with no options
+    client = new MongoClient(process.env.MONGO_URI);
     
     console.log('Attempting to connect to MongoDB...');
     await client.connect();

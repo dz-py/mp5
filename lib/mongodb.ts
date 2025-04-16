@@ -8,19 +8,14 @@ if (!process.env.MONGO_URI) {
 const uri = process.env.MONGO_URI;
 console.log('MongoDB URI format:', uri.substring(0, 20) + '...');
 
-// Simplified options without TLS settings
-// Let the connection string handle TLS configuration
-const options = {
-  connectTimeoutMS: 10000, // 10 seconds
-  socketTimeoutMS: 10000,  // 10 seconds
-  serverSelectionTimeoutMS: 10000, // 10 seconds
-  maxPoolSize: 1,
-  retryWrites: true,
-  retryReads: true,
-  w: 'majority' as const
-};
+// Create a new client for each request
+export async function getMongoClient() {
+  // Create a new client with minimal options
+  const client = new MongoClient(uri);
+  return client;
+}
 
-let client: MongoClient;
+// For development mode, use a global variable
 let clientPromise: Promise<MongoClient>;
 
 if (process.env.NODE_ENV === 'development') {
@@ -31,16 +26,15 @@ if (process.env.NODE_ENV === 'development') {
   };
 
   if (!globalWithMongo._mongoClientPromise) {
-    client = new MongoClient(uri, options);
+    const client = new MongoClient(uri);
     globalWithMongo._mongoClientPromise = client.connect();
   }
+  
   clientPromise = globalWithMongo._mongoClientPromise;
 } else {
-  // In production mode, it's best to not use a global variable.
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+  // In production, create a new client for each request
+  clientPromise = Promise.resolve(null as unknown as MongoClient);
 }
 
-// Export a module-scoped MongoClient promise. By doing this in a
-// separate module, the client can be shared across functions.
+// Export the appropriate client promise
 export default clientPromise; 

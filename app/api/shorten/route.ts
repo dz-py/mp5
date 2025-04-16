@@ -7,29 +7,6 @@ const urlSchema = z.object({
   alias: z.string().min(1, 'Alias is required').max(50, 'Alias is too long'),
 });
 
-// Create a new MongoDB client for each request
-async function getMongoClient() {
-  if (!process.env.MONGO_URI) {
-    throw new Error('MongoDB URI is not defined');
-  }
-  
-  // Log the MongoDB URI format (first 20 chars only)
-  console.log('API Route - MongoDB URI format:', process.env.MONGO_URI.substring(0, 20) + '...');
-  
-  // Simplified options without TLS settings
-  const client = new MongoClient(process.env.MONGO_URI, {
-    connectTimeoutMS: 10000,
-    socketTimeoutMS: 10000,
-    serverSelectionTimeoutMS: 10000,
-    maxPoolSize: 1,
-    retryWrites: true,
-    retryReads: true,
-    w: 'majority' as const
-  });
-  
-  return client;
-}
-
 export async function POST(request: Request) {
   let client: MongoClient | null = null;
   
@@ -37,9 +14,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { url, alias } = urlSchema.parse(body);
 
-    // Get MongoDB client with a timeout
+    // Get MongoDB client
     try {
-      client = await getMongoClient();
+      if (!process.env.MONGO_URI) {
+        throw new Error('MongoDB URI is not defined');
+      }
+      
+      // Create a new client with no options
+      client = new MongoClient(process.env.MONGO_URI);
       console.log('Attempting to connect to MongoDB...');
       await client.connect();
       console.log('Successfully connected to MongoDB');
