@@ -19,11 +19,24 @@ export async function POST(request: Request) {
       client = await Promise.race([
         clientPromise,
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database connection timeout')), 10000)
+          setTimeout(() => reject(new Error('Database connection timeout')), 15000)
         )
       ]) as MongoClient;
     } catch (connectionError) {
       console.error('MongoDB connection error:', connectionError);
+      
+      // Check for specific error types
+      if (connectionError instanceof Error) {
+        if (connectionError.message.includes('tlsv1 alert internal error') || 
+            connectionError.message.includes('SSL') || 
+            connectionError.message.includes('TLS')) {
+          return NextResponse.json(
+            { error: 'SSL/TLS connection error. Please contact support.' },
+            { status: 503 }
+          );
+        }
+      }
+      
       return NextResponse.json(
         { error: 'Database connection failed. Please try again later.' },
         { status: 503 }

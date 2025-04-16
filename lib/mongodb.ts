@@ -6,13 +6,25 @@ if (!process.env.MONGO_URI) {
 
 const uri = process.env.MONGO_URI;
 const options = {
-  connectTimeoutMS: 5000, // 5 seconds
-  socketTimeoutMS: 5000,  // 5 seconds
-  serverSelectionTimeoutMS: 5000, // 5 seconds
+  connectTimeoutMS: 10000, // 10 seconds
+  socketTimeoutMS: 10000,  // 10 seconds
+  serverSelectionTimeoutMS: 10000, // 10 seconds
   maxPoolSize: 1,
   retryWrites: true,
   retryReads: true,
-  w: 'majority' as const
+  w: 'majority' as const,
+  ssl: true,
+  tls: true,
+  tlsAllowInvalidCertificates: false,
+  tlsAllowInvalidHostnames: false,
+  tlsInsecure: false,
+  // Explicitly set TLS version
+  tlsCAFile: undefined,
+  tlsCertificateKeyFile: undefined,
+  tlsCertificateKeyFilePassword: undefined,
+  // Use Node.js native TLS
+  useNewUrlParser: true,
+  useUnifiedTopology: true
 };
 
 let client: MongoClient;
