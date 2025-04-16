@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import clientPromise from '../../../lib/mongodb';
 import { MongoClient } from 'mongodb';
 
 const urlSchema = z.object({
@@ -8,20 +7,61 @@ const urlSchema = z.object({
   alias: z.string().min(1, 'Alias is required').max(50, 'Alias is too long'),
 });
 
+// Create a new MongoDB client for each request
+async function getMongoClient() {
+  if (!process.env.MONGO_URI) {
+    throw new Error('MongoDB URI is not defined');
+  }
+  
+  const client = new MongoClient(process.env.MONGO_URI, {
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 10000,
+    serverSelectionTimeoutMS: 10000,
+    maxPoolSize: 1,
+    retryWrites: true,
+    retryReads: true,
+    w: 'majority' as const,
+    tls: true
+  });
+  
+  return client;
+}
+
 export async function POST(request: Request) {
-  let client: MongoClient;
+  let client: MongoClient | null = null;
+  
   try {
     const body = await request.json();
     const { url, alias } = urlSchema.parse(body);
 
     // Get MongoDB client with a timeout
     try {
-      client = await Promise.race([
-        clientPromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database connection timeout')), 15000)
-        )
-      ]) as MongoClient;
+      client = await getMongoClient();
+      await client.connect();
+      
+      const db = client.db('urlshortener');
+      const collection = db.collection('urls');
+
+      // Check if alias already exists
+      const existingUrl = await collection.findOne({ alias });
+      if (existingUrl) {
+        return NextResponse.json(
+          { error: 'Alias already taken' },
+          { status: 400 }
+        );
+      }
+
+      // Insert new URL
+      await collection.insertOne({
+        url,
+        alias,
+        createdAt: new Date(),
+      });
+
+      return NextResponse.json({
+        success: true,
+        shortenedUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/${alias}`,
+      });
     } catch (connectionError) {
       console.error('MongoDB connection error:', connectionError);
       
@@ -42,30 +82,6 @@ export async function POST(request: Request) {
         { status: 503 }
       );
     }
-
-    const db = client.db('urlshortener');
-    const collection = db.collection('urls');
-
-    // Check if alias already exists
-    const existingUrl = await collection.findOne({ alias });
-    if (existingUrl) {
-      return NextResponse.json(
-        { error: 'Alias already taken' },
-        { status: 400 }
-      );
-    }
-
-    // Insert new URL
-    await collection.insertOne({
-      url,
-      alias,
-      createdAt: new Date(),
-    });
-
-    return NextResponse.json({
-      success: true,
-      shortenedUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/${alias}`,
-    });
   } catch (error) {
     console.error('Error in /api/shorten:', error);
     
@@ -87,5 +103,14 @@ export async function POST(request: Request) {
       { error: 'Internal server error' },
       { status: 500 }
     );
+  } finally {
+    // Always close the client connection
+    if (client) {
+      try {
+        await client.close();
+      } catch (closeError) {
+        console.error('Error closing MongoDB connection:', closeError);
+      }
+    }
   }
 } 

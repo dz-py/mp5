@@ -13,12 +13,9 @@ const options = {
   retryWrites: true,
   retryReads: true,
   w: 'majority' as const,
-  // Simplified TLS settings
-  ssl: true,
+  // TLS settings
   tls: true,
-  // Use Node.js native TLS
-  useNewUrlParser: true,
-  useUnifiedTopology: true
+  // Remove deprecated options
 };
 
 let client: MongoClient;
