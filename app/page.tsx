@@ -11,22 +11,31 @@ import {
   Paper,
   Snackbar,
 } from '@mui/material';
+import { getUrlValidationError } from './utils/validation';
 
 export default function Home() {
   const [url, setUrl] = useState('');
   const [alias, setAlias] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState('');
-  const [shortenedUrl, setShortenedUrl] = useState('');
+  const [shortenedUrl, setShortenedUrl] = useState<string | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
-    setShortenedUrl('');
+    setError(null);
+    setShortenedUrl(null);
 
+    setLoading(true);
     try {
+      const validationError = await getUrlValidationError(url);
+      if (validationError) {
+        setError(validationError);
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch('/api/shorten', {
         method: 'POST',
         headers: {
@@ -38,14 +47,15 @@ export default function Home() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error);
-        return;
+        throw new Error(data.error || 'Failed to shorten URL');
       }
 
       setSuccess('URL shortened successfully!');
       setShortenedUrl(data.shortenedUrl);
-    } catch {
-      setError('An error occurred while shortening the URL');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,7 +63,7 @@ export default function Home() {
     try {
       // Create a temporary textarea element
       const textArea = document.createElement('textarea');
-      textArea.value = shortenedUrl;
+      textArea.value = shortenedUrl || '';
       
       // Make the textarea out of viewport
       textArea.style.position = 'fixed';
@@ -94,7 +104,10 @@ export default function Home() {
               label="URL"
               variant="outlined"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                setError(null);
+              }}
               margin="normal"
               required
             />
@@ -113,8 +126,9 @@ export default function Home() {
               color="primary"
               fullWidth
               sx={{ mt: 2 }}
+              disabled={loading}
             >
-              Shorten URL
+              {loading ? 'Shortening...' : 'Shorten URL'}
             </Button>
           </form>
 
