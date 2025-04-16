@@ -14,13 +14,22 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { url, alias } = urlSchema.parse(body);
 
-    // Set a timeout for the MongoDB connection
-    const connectionPromise = clientPromise;
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Database connection timeout')), 5000);
-    });
+    // Get MongoDB client with a timeout
+    try {
+      client = await Promise.race([
+        clientPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database connection timeout')), 10000)
+        )
+      ]) as MongoClient;
+    } catch (connectionError) {
+      console.error('MongoDB connection error:', connectionError);
+      return NextResponse.json(
+        { error: 'Database connection failed. Please try again later.' },
+        { status: 503 }
+      );
+    }
 
-    client = await Promise.race([connectionPromise, timeoutPromise]) as MongoClient;
     const db = client.db('urlshortener');
     const collection = db.collection('urls');
 
@@ -55,13 +64,6 @@ export async function POST(request: Request) {
     }
     
     if (error instanceof Error) {
-      // Check for specific error types
-      if (error.message.includes('timeout')) {
-        return NextResponse.json(
-          { error: 'Database connection timeout. Please try again.' },
-          { status: 503 }
-        );
-      }
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
