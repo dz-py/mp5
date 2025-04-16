@@ -105,6 +105,7 @@ export default function Home() {
               value={alias}
               onChange={(e) => setAlias(e.target.value)}
               margin="normal"
+              required
             />
             <Button
               type="submit"
