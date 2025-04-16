@@ -100,7 +100,7 @@ export default function Home() {
             />
             <TextField
               fullWidth
-              label="Custom Alias (optional)"
+              label="Custom Alias"
               variant="outlined"
               value={alias}
               onChange={(e) => setAlias(e.target.value)}
