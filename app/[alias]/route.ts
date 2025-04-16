@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation';
 import clientPromise from '../lib/mongodb';
 import { NextRequest } from 'next/server';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   Container,
   TextField,
@@ -19,7 +19,6 @@ export default function Home() {
   const [success, setSuccess] = useState('');
   const [shortenedUrl, setShortenedUrl] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
-  const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +44,7 @@ export default function Home() {
 
       setSuccess('URL shortened successfully!');
       setShortenedUrl(data.shortenedUrl);
-    } catch (err) {
+    } catch (error) {
       setError('An error occurred while shortening the URL');
     }
   };
@@ -77,7 +76,7 @@ export default function Home() {
       } else {
         setError('Failed to copy to clipboard');
       }
-    } catch (err) {
+    } catch (error) {
       setError('Failed to copy to clipboard');
     }
   };
