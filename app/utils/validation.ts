@@ -8,7 +8,7 @@ export async function isValidUrl(url: string): Promise<boolean> {
 
     try {
       // Make a request to check if the domain exists and is accessible
-      const response = await fetch(url, {
+      await fetch(url, {
         method: 'HEAD',
         mode: 'no-cors',
         signal: controller.signal
@@ -16,9 +16,9 @@ export async function isValidUrl(url: string): Promise<boolean> {
       
       clearTimeout(timeoutId);
       return true;
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         return false; // Timeout occurred
       }
       throw error; 
