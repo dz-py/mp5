@@ -4,7 +4,12 @@ if (!process.env.MONGO_URI) {
   throw new Error('Please add your Mongo URI to .env.local');
 }
 
+// Parse the MongoDB URI to ensure it's properly formatted
 const uri = process.env.MONGO_URI;
+console.log('MongoDB URI format:', uri.substring(0, 20) + '...');
+
+// Simplified options without TLS settings
+// Let the connection string handle TLS configuration
 const options = {
   connectTimeoutMS: 10000, // 10 seconds
   socketTimeoutMS: 10000,  // 10 seconds
@@ -12,10 +17,7 @@ const options = {
   maxPoolSize: 1,
   retryWrites: true,
   retryReads: true,
-  w: 'majority' as const,
-  // TLS settings
-  tls: true,
-  // Remove deprecated options
+  w: 'majority' as const
 };
 
 let client: MongoClient;

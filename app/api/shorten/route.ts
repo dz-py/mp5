@@ -13,6 +13,10 @@ async function getMongoClient() {
     throw new Error('MongoDB URI is not defined');
   }
   
+  // Log the MongoDB URI format (first 20 chars only)
+  console.log('API Route - MongoDB URI format:', process.env.MONGO_URI.substring(0, 20) + '...');
+  
+  // Simplified options without TLS settings
   const client = new MongoClient(process.env.MONGO_URI, {
     connectTimeoutMS: 10000,
     socketTimeoutMS: 10000,
@@ -20,8 +24,7 @@ async function getMongoClient() {
     maxPoolSize: 1,
     retryWrites: true,
     retryReads: true,
-    w: 'majority' as const,
-    tls: true
+    w: 'majority' as const
   });
   
   return client;
@@ -37,7 +40,9 @@ export async function POST(request: Request) {
     // Get MongoDB client with a timeout
     try {
       client = await getMongoClient();
+      console.log('Attempting to connect to MongoDB...');
       await client.connect();
+      console.log('Successfully connected to MongoDB');
       
       const db = client.db('urlshortener');
       const collection = db.collection('urls');
@@ -108,6 +113,7 @@ export async function POST(request: Request) {
     if (client) {
       try {
         await client.close();
+        console.log('MongoDB connection closed');
       } catch (closeError) {
         console.error('Error closing MongoDB connection:', closeError);
       }
