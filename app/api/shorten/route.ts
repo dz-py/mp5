@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import clientPromise from '../../../lib/mongodb';
+import { MongoClient } from 'mongodb';
 
 const urlSchema = z.object({
   url: z.string().url('Please enter a valid URL'),
@@ -8,12 +9,18 @@ const urlSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  let client;
+  let client: MongoClient;
   try {
     const body = await request.json();
     const { url, alias } = urlSchema.parse(body);
 
-    client = await clientPromise;
+    // Set a timeout for the MongoDB connection
+    const connectionPromise = clientPromise;
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Database connection timeout')), 5000);
+    });
+
+    client = await Promise.race([connectionPromise, timeoutPromise]) as MongoClient;
     const db = client.db('urlshortener');
     const collection = db.collection('urls');
 
@@ -48,6 +55,13 @@ export async function POST(request: Request) {
     }
     
     if (error instanceof Error) {
+      // Check for specific error types
+      if (error.message.includes('timeout')) {
+        return NextResponse.json(
+          { error: 'Database connection timeout. Please try again.' },
+          { status: 503 }
+        );
+      }
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
