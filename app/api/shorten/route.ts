@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import clientPromise from '../../lib/mongodb';
+import clientPromise from '../../../lib/mongodb';
 
 const urlSchema = z.object({
   url: z.string().url('Please enter a valid URL'),
@@ -8,11 +8,12 @@ const urlSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  let client;
   try {
     const body = await request.json();
     const { url, alias } = urlSchema.parse(body);
 
-    const client = await clientPromise;
+    client = await clientPromise;
     const db = client.db('urlshortener');
     const collection = db.collection('urls');
 
@@ -37,12 +38,22 @@ export async function POST(request: Request) {
       shortenedUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/${alias}`,
     });
   } catch (error) {
+    console.error('Error in /api/shorten:', error);
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.errors[0].message },
         { status: 400 }
       );
     }
+    
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
