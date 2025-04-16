@@ -44,7 +44,7 @@ export default function Home() {
 
       setSuccess('URL shortened successfully!');
       setShortenedUrl(data.shortenedUrl);
-    } catch (error) {
+    } catch {
       setError('An error occurred while shortening the URL');
     }
   };
@@ -76,7 +76,7 @@ export default function Home() {
       } else {
         setError('Failed to copy to clipboard');
       }
-    } catch (error) {
+    } catch {
       setError('Failed to copy to clipboard');
     }
   };
